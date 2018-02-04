@@ -1,0 +1,104 @@
+#include<linux/kernel.h>
+#include<linux/module.h>
+#include<linux/fs.h>
+#include<asm/uaccess.h>
+
+
+int init_module(void);
+void exit_module(void);
+static int device_open(struct inode *,struct file *);
+static int device_release(struct inode *,struct file *);
+static ssize_t device_read(struct file*,char *,size_t,loff_t *);
+static ssize_t device_write(struct file *,const char *,size_t,loff_t):
+
+#define SUCCESS 0
+#define DEVICE_NAME "chardev" /*device name in /proc/devices*/
+#define BUF_LEN 80 /*max length of message from device*/
+
+
+static int major; /*major number*/
+static int Device_open=0; /*to check whether device is open*/
+static char msg[BUF_LEN];
+static char *msg_ptr;
+
+static struct file_operations fops ={
+
+	.read=device_read,
+	.write=device_write,
+	.open=device_open,
+	.release=device_release
+};
+
+
+int init_module(void)
+{
+	major=register_chrdev(0,DEVICE_NAME,&fops);
+
+	if(major<0){
+	printk(KERN_ALERT "registering device failed with number %d\n", major);
+
+	return major;
+	}
+	
+	printk(KERN_INFO "major number assigned succesfully");
+	
+	reurn SUCCESS;
+}
+
+
+
+void exit_module(void)
+{
+	int ret=unregister_chrdev(major,DEVICE_NAME);
+	if(ret<0)
+		printk(KERN_ALERT "failed to unregister with %\n",ret);
+}
+
+
+{
+	static int counter=0;
+	
+	if(device_open)
+	
+		return -EBUSY;
+	device_open++;
+	sprintf(msg,"file opened %d times\n",counter++);
+	msg_ptr=msg;
+	try_module_get(THIS_MODULE);
+	return SUCCESS;
+}
+
+
+static int device_release(struct inode *inode , struct file *file)
+{
+	device_open---;
+	module_put(THIS_MODULE);
+ 	return 0;
+}
+
+static ssize_t device_read(struct file *filp char *buffer size_t length loff_t *offset)
+{
+ int bytes_read=0;
+
+if(*msg_ptr==0)/*0 signifies end of the message*/
+ return 0;
+
+while (length &&*msg_ptr) {
+
+put_user(*(msg_ptr++),buffer++);
+
+length--;
+bytes_read++;
+}
+
+return bytes_read;
+}
+
+static ssize_t device_write(struct file *filp,const cahr *buff,size_t len,loff_t *off)
+{
+printk(KERN_ALERT "this driver only allows to read.\n");
+return -EINVAL;
+}
+
+
+
